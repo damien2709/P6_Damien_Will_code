@@ -1,15 +1,16 @@
 //IMPORTS
   //Modules
   const express = require('express'); //on importe module Express
+ require('dotenv').config(); ////on importe le fichier config du module dotenv (pas besoin de constante on n'en a pas l'utilité) pour la confidentialité des informations sensibles
   const mongoose = require('mongoose'); //on importe module mongoose
   const path = require('path'); //on importe le module Path pour pouvoir accèder au système de fichiers du serveur
 
     //Fichiers
   const routesSauces = require('./routes/routesSauces'); //on importe le router qui gère les routes pour les articles
   const routesUser = require('./routes/routesUser'); //on importe le router qui gère les routes pour les utilisateurs
-  
+
   // CONNEXION BDD
-  mongoose.connect('mongodb+srv://damien_will:mOXvPWqULIRUoDyL@cluster0.qhmuf.mongodb.net/Cluster0?retryWrites=true&w=majority',
+  mongoose.connect(`mongodb+srv://${process.env.CONNECTBDDNAME}:${process.env.CONNECTBDDPW}@cluster0.qhmuf.mongodb.net/${process.env.CONNECTBDDPROJECT}?retryWrites=true&w=majority`,
     { useNewUrlParser: true,
       useUnifiedTopology: true })
     .then(() => console.log('Connexion à MongoDB réussie !'))
