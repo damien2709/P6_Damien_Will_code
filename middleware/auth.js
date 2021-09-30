@@ -8,7 +8,7 @@ module.exports = (req, res, next) => {
     const userId = decodedToken.userId; //on récupère le userID qui était dans le token
     // On va ensuite vérifier que l'userID de la requête correspond bien à celui qui est dans le token. Si on a un userID dans le corps de la requête et si ce userID est différent du userID, alors on retournera une erreur. On utilise "throw" pour renvoyer l'erreur vers le catch. Et si tout va bien (else), on passera au prochain middleware grace à next().
     if (req.body.userId && req.body.userId !== userId) {
-      throw 'ID Utilisateur invalide !';
+      throw res.statut(403); //code d'erreur demandé par les spécifications.
     } else {
       next();
     }

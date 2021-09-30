@@ -16,9 +16,8 @@ exports.signup = (req, res, next) => {
             }); 
         //on créé un nouvel utilisateur avec le modèle Mongoose, on remplace le password par le hash créé. 
             user.save() //on enregistre l'utilisateur (fonction asynchrone)
-                .then(
-                    () => res.statut(201).json({ message: "utilisateur créé !" }))
-                .catch(error => res.status(400).json({ error }));
+                .then(() => res.json({ message: "utilisateur créé !" })) // si je colle la réponse de statut de la réponse avec, ça ne marche pas! L'API ne s'y attend pas ?
+                .catch(error => res.status(400).json({ error }))       
         }) 
         .catch(error => res.status(500).json({ error })); // on récupère l'erreur et on renvoie un code 500 (pb de serveur) puis un message d'erreur dans un objet. "error" est un raccourci JS qui veut dire : (error : error) 
 };
@@ -29,20 +28,22 @@ exports.login = (req, res, next) => {
         // on doit vérifier si on a un résultat (trouvé un user existant dans la BDD)
         .then(user => {
             if(!user){
-                res.status(401).json({ error: 'Utilisateur non trouvé !'});
+                return res.status(401).json({ error: 'Utilisateur non trouvé !'});
             }
-            //si on a un user, on va comparer le mot de passe de la requête avec celui du user dans la BDD (qui est hasché). On utilise la méthode "compare()" de bcrypt. La fonction retourne une promesse dont la valeur de retour est un boolean. Si la valeur est false, on va renvoyer un message d'erreur, si c'est ok, on va créer et renvoyer un objet user comprenant l'ID et un token généré par jsonwebtoken grace à sa méthode sign() qui prend comme 1er argument les données que l'on veut encoder (le payload), comme 2ème argument la clé secrète pour l'encodage, comme 3ème argument un délai d'expiration. 
-            bcrypt.compare(req.body.password, user.password)
-                .then(valid => {
-                    if(!valid){
-                        res.status(401).json({ error: 'Mot de passe incorrect !' });
-                    }
-                    res.statut(200).json({
-                        userId: user._id,
-                        token : jwtoken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'})
-                    });
-                })
-                .catch(error => res.status(500).json({ error})); //si erreur serveur
+            //si on a un user, on va comparer le mot de passe de la requête avec celui du user dans la BDD (qui est hasché). On utilise la méthode "compare()" de bcrypt. La fonction retourne une promesse dont la valeur de retour est un boolean. Si la valeur est false, on va renvoyer un message d'erreur, si c'est ok, on va créer et renvoyer un objet user comprenant l'ID et un token généré par jsonwebtoken grace à sa méthode sign() qui prend comme 1er argument les données que l'on veut encoder (le payload), comme 2ème argument la clé secrète pour l'encodage, comme 3ème argument un délai d'expiration.
+            else{ 
+                bcrypt.compare(req.body.password, user.password)
+                    .then(valid => {
+                        if(!valid){
+                            return res.status(401).json({ error: 'Mot de passe incorrect !' });
+                        }
+                        res.json({
+                            userId: user._id,
+                            token : jwtoken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'})
+                        });// si je colle la réponse de statut de la réponse avec, ça ne marche pas!
+                    })
+                    .catch(error => res.status(500).json({ error})); //si erreur serveur
+            }
 
         })// on renvoie le code de la réponse et le user demandé
 

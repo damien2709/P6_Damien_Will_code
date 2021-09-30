@@ -7,7 +7,7 @@ const router = express.Router(); // on créé un routeur avec la méthode Routeu
 const userCtrl = require('../controllers/controllerUser');
 
 router.post('/signup', userCtrl.signup); // la route pour l'enregistrement de nouveaux utilisateurs
-/*router.post('/login', userCtrl.login); */ // la route pour connecter les utilisateurs déjà enregistrés
+router.post('/login', userCtrl.login); // la route pour connecter les utilisateurs déjà enregistrés
 
 
 module.exports = router; //on exporte le router de ce fichier.

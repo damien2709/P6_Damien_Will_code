@@ -20,8 +20,6 @@ exports.createSauce = (req, res, next) => {
       heat : sauceObject.heat,
       likes : "0", //j'initialise le compteur like à 0
       dislikes : "0",  //j'initialise le compteur dislike à 0
-      usersLiked : [], //je crée le tableau qui comprendra les users qui likent
-      usersDislikes : [], //je crée le tableau qui comprendra les users qui dislikent
 
 //un raccourci javascript pour les lignes du dessus . on aurait utilisé l'opérateur "spread" :  const sauce = new Sauce ({...req.body});.
 
@@ -32,7 +30,7 @@ exports.createSauce = (req, res, next) => {
       sauce.save()
         // on doit renvoyer une réponse à l'appli frontend sinon on aura l'expiration de la requête !
         .then(
-          () => res.status(201).json({message : 'sauce enregistrée'})) // on envoie un statut et un message en json. 
+          () => res.json({message : 'sauce enregistrée'})) // on envoie un statut et un message en json. 
         .catch(error => res.status(400).json({ error})); // on récupère l'erreur et on renvoie un code 400 puis un message d'erreur dans un objet. "error" est un raccourci JS qui veut dire : (error : error) 
 };
 
