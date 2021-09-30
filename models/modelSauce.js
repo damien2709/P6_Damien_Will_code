@@ -11,8 +11,8 @@ const saucesSchema = mongoose.Schema({
   heat: { type: Number, required: true },//nombre entre 1 et 10 décrivant la sauce.
   likes: { type: Number, required: true },//nombre d'utilisateurs qui aiment (= likent) la sauce.
   dislikes: { type: Number, required: true },//nombre d'utilisateurs qui n'aiment pas (= dislike) la sauce
-  usersLiked: {type: String},//[ "String <userId>" ]— tableau des identifiants des utilisateurs qui ont aimé (= liked) la sauce.
-  usersDisliked: {type: String},//[ "String <userId>" ]— tableau des identifiants des utilisateurs qui n'ont pas aimé (= liked) la sauce.
+  usersLiked: [{type: String}],//tableau de strings : les identifiants des utilisateurs qui ont aimé (= liked) la sauce.
+  usersDisliked: [{type: String}],//tableau de strings : les identifiants des utilisateurs qui n'ont pas aimé (= liked) la sauce.
 });
 
 // pour pouvoir utiliser ce schéma dans d’autres fichiers, grâce à la méthode « model » de mongoose on va l’exporter : 

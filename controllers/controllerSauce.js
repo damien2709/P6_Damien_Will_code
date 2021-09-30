@@ -17,21 +17,25 @@ exports.createSauce = (req, res, next) => {
       manufacturer : sauceObject.manufacturer,
       description :  sauceObject.description,
       mainPepper :  sauceObject.mainPepper,
+      //Comme le fichier image est traité par le middleware de Multer et que ce dernier lui attribue un nom de fichier et une extension, on utiliser une construction dynamique pour l'URL avec des backticks : on commence par le protocole (http, https), puis le host de notre serveur (localhost, nom de domaine), puis le chemin du fichier avec son nom et son extension.
+      imageUrl : `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
       heat : sauceObject.heat,
       likes : "0", //j'initialise le compteur like à 0
       dislikes : "0",  //j'initialise le compteur dislike à 0
+      usersLiked: [""],
+      usersDisliked: [""]
 
 //un raccourci javascript pour les lignes du dessus . on aurait utilisé l'opérateur "spread" :  const sauce = new Sauce ({...req.body});.
 
- //Comme le fichier image est traité par le middleware de Multer et que ce dernier lui attribue un nom de fichier et une extension, on utiliser une construction dynamique pour l'URL avec des backticks : on commence par le protocole (http, https), puis le host de notre serveur (localhost, nom de domaine), puis le chemin du fichier avec son nom et son extension.
-      imageUrl : `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+
   });
       // on va enregistrer l'objet (la sauce) dans le BDD. La méthode save renvoie une promesse. 
       sauce.save()
         // on doit renvoyer une réponse à l'appli frontend sinon on aura l'expiration de la requête !
-        .then(
-          () => res.json({message : 'sauce enregistrée'})) // on envoie un statut (ca fait buguer !!!) et un message en json. 
+        .then(() => res.json({message : 'sauce enregistrée'}))
+         // on envoie un statut (ca fait buguer !!!) et un message en json. 
         .catch(error => res.status(400).json({ error})); // on récupère l'erreur et on renvoie un code 400 puis un message d'erreur dans un objet. "error" est un raccourci JS qui veut dire : (error : error) 
+
 };
 
 //PUT : LOGIQUE MéTIER POUR MODIFIER UNE SAUCE : La fonction "updateSauce" pour une requête de type PUT permettant de modifier, mettre à jour un article identifié par son ID dans la BDD. Nous devons d'abord savoir si le user a modifié le fichier image ou pas (car si oui on aura un objet form-data, si non on aura un objet json). On cherche donc à savoir s'il y a un fichier dans la requête. Ensuite, nous utilisons la méthode updateOne() dans notre modèle/classe "Sauce"  pour modifier la sauce unique ayant le même _id que le paramètre de la requête ; La méthode updateOne() renvoie une promesse. Elle prend 2 arguments : le 1er est l'objet de comparaison donc on récupère l'id des paramètres de route, le 2ème argument est le nouvel objet ou sa nouvelle version (on utilise le spread operator).
@@ -65,7 +69,7 @@ exports.deleteSauce = (req, res, next) => {
 //GET : LOGIQUE MéTIER POUR LIRE UNE SAUCE UNIQUE : je veux renvoyer une sauce unique identifiée par son ID (créé par la BDD lors de la requête POST). Nous utilisons la méthode findOne() dans notre modèle/classe "Sauce" (QUI EST UN FICHIER "Sauce" DANS LA BDD !) pour trouver la sauce unique ayant le même _id que le paramètre de la requête ; La méthode findOne() renvoie une promesse. Elle prend comme argument l'objet de comparaison donc on récupère l'ID des paramètres de route.
 exports.getOneSauce = (req, res, next) => {
     Sauce.findOne({ _id: req.params.id }) // on remarque ici l'utilisation de la méthode params de l'objet requête
-        .then(thing => res.status(200).json(thing)) // on renvoie le code de la réponse et le thing demandé
+        .then(sauce => res.status(200).json(sauce)) // on renvoie le code de la réponse et le thing demandé
         .catch(error => res.status(404).json({ error }));
 };
 
