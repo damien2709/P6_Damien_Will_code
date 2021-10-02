@@ -52,51 +52,45 @@ exports.modifySauce = (req, res, next) => {
 exports.manageLike = (req, res, next) => {
       const userVote = req.body.userId; //on récupère l'ID de l'utilisateur qui a voté.
       //si like == 1, on incrémente de +1 la valeur de la clé "likes" de la sauce identifiée par l'ID dans l'URL, et on ajoute l'utilisateur au tableau des usersLiked.
-      Sauce.findOne({_id : req.params.id})
-        .then(function (sauce){
-          if(req.body.like == 1){
-            if (sauce.usersLiked.includes(userVote)){
-              alert("Vous avez déjà liké cette sauce !")
-            }
-            else {
-              Sauce.updateOne({ _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
-                { $push: {userLiked : userVote}, $inc : {likes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
-              )
-                .then( ()=> res.json({ message: 'Like pris en compte'}))
-                .catch(error => res.status(400).json({ error }));
-            }
-          } 
+      if(req.body.like == 1){
+        Sauce.updateOne(
+          { _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
+          { $inc : {likes: +1}, $push: {userLiked : userVote}} //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+        )
+            .then( ()=> res.json({ message: 'Like pris en compte'}))
+            .catch(error => res.status(400).json({ error }));
+      }
       //si like == -1, on incrémente de +1 la valeur de la clé "dislikes" de la sauce identifiée par l'ID dans l'URL, et retire l'utilisateur au tableau des usersDisliked. On utilise la méthode updateOne car c'est une modification.
-          if(req.body.like == -1){
-            if (sauce.usersDisliked.includes(userVote)){
-              alert("Vous avez déjà disliké cette sauce !")
-            }
-            else {
-            Sauce.updateOne({ _id: req.params.id }, 
-              { $push: {userDisliked : userVote}, $inc : {dislikes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
-            )
-              .then( ()=> res.json({ message: 'Dislike pris en compte'}))
-              .catch(error => res.status(400).json({ error }));
-          }
+      if(req.body.like == -1){
+        Sauce.updateOne(
+          { _id: req.params.id }, 
+          { $inc : {dislikes: +1}, $push: {userDisliked : userVote}} //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+        )
+            .then( ()=> res.json({ message: 'Dislike pris en compte'}))
+            .catch(error => res.status(400).json({ error }));
+      }
       //si like == 0, on trouve la sauce pour lire ses informations. Ensuite, si l'utilisateur qui a voté fait parti du tableau des likers, on modifie la sauce en retirant l'utilisateur du tableau et en décrémentant la valeur de likes de -1. Si l'utilisateur fait parti du tableau Disliked, on modifie la sauce en retirant l'utilisateur du tableau disliked et en décrémentant la valeur de dislikes de -1. On utilise la méthode FindOne pour lire les information puis la méthode UpdateOne pour modifier les informations.
-          if(req.body.like == 0){
-              if (sauce.usersLiked.includes(userVote)){
-                Sauce.updateOne({_id : req.params.id}, {
-                  $pull : { usersLiked : userVote}, $inc : {likes : -1 } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
-                })
-                    .then(() => res.status(201).json({message : "Like annulé !"}))
-                    .catch(error => res.status(500).json({error}))
-              }
-              if (sauce.usersDisliked.includes(userVote)){
-                Sauce.updateOne({_id : req.params.id}, {
-                  $pull : { usersDisliked : userVote}, $inc : {dislikes : -1 }
-                })
-                  .then(() => res.status(201).json({message : "Dislike annulé!"}))
-                  .catch(error => res.status(500).json({ error }))
-              }
-          } 
-        }})
+      if(req.body.like == 0){
+        Sauce.findOne({_id : req.params.id})
+                .then(sauce => {
+                    if (sauce.usersLiked.includes(userVote)){
+                      Sauce.updateOne({_id : req.params.id}, {
+                        $pull : { usersLiked : userVote}, $inc : {likes : -1 } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+                      })
+                        .then(() => res.status(201).json({message : "Like annulé !"}))
+                        .catch(error => res.status(500).json({error}))
+                    }
+                    if (sauce.usersDisliked.includes(userVote)){
+                      Sauce.updateOne({_id : req.params.id}, {
+                        $pull : { usersDisliked : userVote}, $inc : {dislikes : -1 }
+                      })
+                        .then(() => res.status(201).json({message : "Dislike annulé!"}))
+                        .catch(error => res.status(500).json({ error }))
+                    }
+
+                }) 
                 .catch(error => res.status(500).json({ error}))
+      }
 }
 
 //DELETE : LOGIQUE MéTIER POUR SUPPRIMER UNE SAUCE : la fonction "deleteSauce" pour une requête de type DELETE permettant de supprimer une sauce identifiée par son ID dans la BDD.Nous utilisons la méthode deleteOne() dans notre modèle/classe "Sauce" (QUI EST UN FICHIER "Sauce" DANS LA BDD !)pour modifier la sauce unique ayant le même _id que le paramètre de la requête ; La méthode updateOne() renvoie une promesse. Elle prend 1 argument : l'objet de comparaison.
