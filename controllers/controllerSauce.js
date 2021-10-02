@@ -22,12 +22,9 @@ exports.createSauce = (req, res, next) => {
       heat : sauceObject.heat,
       likes : "0", //j'initialise le compteur like à 0
       dislikes : "0",  //j'initialise le compteur dislike à 0
-      usersLiked: [""],
-      usersDisliked: [""]
-
+      usersLiked: [""],//je crée le tableau vide des users qui vont liker
+      usersDisliked: [""] //je crée le tableau vide des users qui vont disliker
 //un raccourci javascript pour les lignes du dessus . on aurait utilisé l'opérateur "spread" :  const sauce = new Sauce ({...req.body});.
-
-
   });
       // on va enregistrer l'objet (la sauce) dans le BDD. La méthode save renvoie une promesse. 
       sauce.save()
@@ -51,6 +48,57 @@ exports.modifySauce = (req, res, next) => {
         .catch(error => res.status(400).json({ error }))
 };
 
+//POST : LOGIQUE MéTIER POUR MODIFIER les likes d'une SAUCE
+exports.manageLike = (req, res, next) => {
+      const userVote = req.body.userId; //on récupère l'ID de l'utilisateur qui a voté.
+      //si like == 1, on incrémente de +1 la valeur de la clé "likes" de la sauce identifiée par l'ID dans l'URL, et on ajoute l'utilisateur au tableau des usersLiked.
+      Sauce.findOne({_id : req.params.id})
+        .then(function (sauce){
+          if(req.body.like == 1){
+            if (sauce.usersLiked.includes(userVote)){
+              alert("Vous avez déjà liké cette sauce !")
+            }
+            else {
+              Sauce.updateOne({ _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
+                { $push: {userLiked : userVote}, $inc : {likes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+              )
+                .then( ()=> res.json({ message: 'Like pris en compte'}))
+                .catch(error => res.status(400).json({ error }));
+            }
+          } 
+      //si like == -1, on incrémente de +1 la valeur de la clé "dislikes" de la sauce identifiée par l'ID dans l'URL, et retire l'utilisateur au tableau des usersDisliked. On utilise la méthode updateOne car c'est une modification.
+          if(req.body.like == -1){
+            if (sauce.usersDisliked.includes(userVote)){
+              alert("Vous avez déjà disliké cette sauce !")
+            }
+            else {
+            Sauce.updateOne({ _id: req.params.id }, 
+              { $push: {userDisliked : userVote}, $inc : {dislikes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+            )
+              .then( ()=> res.json({ message: 'Dislike pris en compte'}))
+              .catch(error => res.status(400).json({ error }));
+          }
+      //si like == 0, on trouve la sauce pour lire ses informations. Ensuite, si l'utilisateur qui a voté fait parti du tableau des likers, on modifie la sauce en retirant l'utilisateur du tableau et en décrémentant la valeur de likes de -1. Si l'utilisateur fait parti du tableau Disliked, on modifie la sauce en retirant l'utilisateur du tableau disliked et en décrémentant la valeur de dislikes de -1. On utilise la méthode FindOne pour lire les information puis la méthode UpdateOne pour modifier les informations.
+          if(req.body.like == 0){
+              if (sauce.usersLiked.includes(userVote)){
+                Sauce.updateOne({_id : req.params.id}, {
+                  $pull : { usersLiked : userVote}, $inc : {likes : -1 } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+                })
+                    .then(() => res.status(201).json({message : "Like annulé !"}))
+                    .catch(error => res.status(500).json({error}))
+              }
+              if (sauce.usersDisliked.includes(userVote)){
+                Sauce.updateOne({_id : req.params.id}, {
+                  $pull : { usersDisliked : userVote}, $inc : {dislikes : -1 }
+                })
+                  .then(() => res.status(201).json({message : "Dislike annulé!"}))
+                  .catch(error => res.status(500).json({ error }))
+              }
+          } 
+        }})
+                .catch(error => res.status(500).json({ error}))
+}
+
 //DELETE : LOGIQUE MéTIER POUR SUPPRIMER UNE SAUCE : la fonction "deleteSauce" pour une requête de type DELETE permettant de supprimer une sauce identifiée par son ID dans la BDD.Nous utilisons la méthode deleteOne() dans notre modèle/classe "Sauce" (QUI EST UN FICHIER "Sauce" DANS LA BDD !)pour modifier la sauce unique ayant le même _id que le paramètre de la requête ; La méthode updateOne() renvoie une promesse. Elle prend 1 argument : l'objet de comparaison.
 exports.deleteSauce = (req, res, next) => {
   Sauce.findOne({ _id: req.params.id }) //on va chercher le fichier de la BDD dont l'ID correspond à celle de la requête.
@@ -68,7 +116,7 @@ exports.deleteSauce = (req, res, next) => {
 
 //GET : LOGIQUE MéTIER POUR LIRE UNE SAUCE UNIQUE : je veux renvoyer une sauce unique identifiée par son ID (créé par la BDD lors de la requête POST). Nous utilisons la méthode findOne() dans notre modèle/classe "Sauce" (QUI EST UN FICHIER "Sauce" DANS LA BDD !) pour trouver la sauce unique ayant le même _id que le paramètre de la requête ; La méthode findOne() renvoie une promesse. Elle prend comme argument l'objet de comparaison donc on récupère l'ID des paramètres de route.
 exports.getOneSauce = (req, res, next) => {
-    Sauce.findOne({ _id: req.params.id }) // on remarque ici l'utilisation de la méthode params de l'objet requête
+    Sauce.findOne({ _id: req.params.id }) // on remarque ici l'utilisation de la méthode params de l'objet requête qui va chercher l'id correspondant au dernier paramètre de l'URL après le slash de la page web qui fait la requête.
         .then(sauce => res.status(200).json(sauce)) // on renvoie le code de la réponse et le thing demandé
         .catch(error => res.status(404).json({ error }));
 };
@@ -79,3 +127,4 @@ exports.getAllSauces = (req, res, next) => {
       .then(sauces => res.status(200).json(sauces)) //ici on renvoie en réponse un code et le tableau appelé "things" renvoyé par la BDD qui contient la liste de toutes les sauces
       .catch(error => res.status(400).json({error}));
 };
+

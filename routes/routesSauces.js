@@ -15,7 +15,7 @@ const sauceCtrl = require('../controllers/controllerSauce');
 router.post('/', auth, multer, sauceCtrl.createSauce); 
 
 //ROUTE POST POUR LES LIKES.
-//router.post('/:id/like', auth, sauceCtrl.createLike); 
+router.post('/:id/like', auth, sauceCtrl.manageLike); 
   
 // ROUTE PUT.  
 router.put('/:id', auth, multer, sauceCtrl.modifySauce);
