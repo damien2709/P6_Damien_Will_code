@@ -55,7 +55,7 @@ exports.manageLike = (req, res, next) => {
       if(req.body.like == 1){
         Sauce.updateOne(
           { _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
-          { $inc : {likes: +1}, $push: {userLiked : userVote}} //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+          { $push: {userLiked : userVote}, $inc : {likes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
         )
             .then( ()=> res.json({ message: 'Like pris en compte'}))
             .catch(error => res.status(400).json({ error }));
@@ -64,7 +64,7 @@ exports.manageLike = (req, res, next) => {
       if(req.body.like == -1){
         Sauce.updateOne(
           { _id: req.params.id }, 
-          { $inc : {dislikes: +1}, $push: {userDisliked : userVote}} //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+          { $push: {userDisliked : userVote}, $inc : {dislikes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
         )
             .then( ()=> res.json({ message: 'Dislike pris en compte'}))
             .catch(error => res.status(400).json({ error }));
