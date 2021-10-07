@@ -16,7 +16,7 @@ exports.signup = (req, res, next) => {
             }); 
         //on créé un nouvel utilisateur avec le modèle Mongoose, on remplace le password par le hash créé. 
             user.save() //on enregistre l'utilisateur (fonction asynchrone)
-                .then(() => res.json({ message: "utilisateur créé !" })) // si je colle la réponse de statut de la réponse avec, ça ne marche pas! L'API ne s'y attend pas ?
+                .then(() => res.status(201).json({ message: "utilisateur créé !" })) // si je colle la réponse de statut de la réponse avec, ça ne marche pas! L'API ne s'y attend pas ?
                 .catch(error => res.status(400).json({ error }))       
         }) 
         .catch(error => res.status(500).json({ error })); // on récupère l'erreur et on renvoie un code 500 (pb de serveur) puis un message d'erreur dans un objet. "error" est un raccourci JS qui veut dire : (error : error) 

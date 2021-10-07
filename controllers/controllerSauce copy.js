@@ -55,44 +55,51 @@ exports.manageLike = (req, res, next) => {
   Sauce.findOne({_id : req.params.id})
     .then(sauce => {
       if(req.body.like == 1){
-        
+        if (sauce.usersLiked.includes(userVote)){
+          res.statut(400).json({message: 'Déjà likée !'})
+        }
+        else {
           Sauce.updateOne(
             { _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
-            { $push: {usersLiked : req.body.userId}, $inc : {likes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+            { $push: {usersLiked : userVote}, $inc : {likes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
           )
             .then( ()=> res.status(201).json({ message: 'Like pris en compte'}))
             .catch(error => res.status(400).json({ error }));
+        }
       }
-      
   //si like == -1, on incrémente de +1 la valeur de la clé "dislikes" de la sauce identifiée par l'ID dans l'URL, et retire l'utilisateur au tableau des usersDisliked. On utilise la méthode updateOne car c'est une modification.
       if(req.body.like == -1){
+        if (sauce.usersDisliked.includes(userVote)){
+          res.status(400).json({message: 'Déjà dislikée !'})
+        }
+        else {
         Sauce.updateOne(
-          { _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
-          { $push: {usersDisliked : req.body.userId}, $inc : {dislikes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+          { _id: req.params.id }, 
+          { $push: {usersDisliked : userVote}, $inc : {dislikes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
         )
-          .then( ()=> res.status(201).json({ message: 'Dislike pris en compte'}))
-          .catch(error => res.status(400).json({ error }));
+            .then( ()=> res.json({ message: 'Dislike pris en compte'}))
+            .catch(error => res.status(400).json({ error }));
+        }
       }
-       
       //si like == 0, on trouve la sauce pour lire ses informations. Ensuite, si l'utilisateur qui a voté fait parti du tableau des likers, on modifie la sauce en retirant l'utilisateur du tableau et en décrémentant la valeur de likes de -1. Si l'utilisateur fait parti du tableau Disliked, on modifie la sauce en retirant l'utilisateur du tableau disliked et en décrémentant la valeur de dislikes de -1. On utilise la méthode FindOne pour lire les information puis la méthode UpdateOne pour modifier les informations.
       if(req.body.like == 0){
         if (sauce.usersLiked.includes(userVote)){
-          Sauce.updateOne({_id : req.params.id}, {
-            $pull : { usersLiked : userVote}, $inc : {likes : -1 } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
-          })
-            .then(() => res.status(201).json({message : "Like annulé !"}))
-            .catch(error => res.status(500).json({error}))
-      }
+            Sauce.updateOne({_id : req.params.id}, {
+              $pull : { usersLiked : userVote}, $inc : {likes : -1 } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+            })
+              .then(() => res.status(201).json({message : "Like annulé !"}))
+              .catch(error => res.status(500).json({error}))
+        }
         if (sauce.usersDisliked.includes(userVote)){
-          Sauce.updateOne({_id : req.params.id}, {
-            $pull : { usersDisliked : userVote}, $inc : {dislikes : -1 }
-          })
-            .then(() => res.status(201).json({message : "Dislike annulé!"}))
-            .catch(error => res.status(500).json({ error }))
+            Sauce.updateOne({_id : req.params.id}, {
+              $pull : { usersDisliked : userVote}, $inc : {dislikes : -1 }
+            })
+              .then(() => res.status(201).json({message : "Dislike annulé!"}))
+              .catch(error => res.status(500).json({ error }))
         }
       }
-        
     })
+
     .catch(error => res.status(500).json({ error}))
 }
 
