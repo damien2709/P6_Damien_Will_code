@@ -35,27 +35,52 @@ exports.createSauce = (req, res, next) => {
 
 };
 
-//PUT : LOGIQUE MéTIER POUR MODIFIER UNE SAUCE : La fonction "updateSauce" pour une requête de type PUT permettant de modifier, mettre à jour un article identifié par son ID dans la BDD. Nous devons d'abord savoir si le user a modifié le fichier image ou pas (car si oui on aura un objet form-data, si non on aura un objet json). On cherche donc à savoir s'il y a un fichier dans la requête. Ensuite, nous utilisons la méthode updateOne() dans notre modèle/classe "Sauce"  pour modifier la sauce unique ayant le même _id que le paramètre de la requête ; La méthode updateOne() renvoie une promesse. Elle prend 2 arguments : le 1er est l'objet de comparaison donc on récupère l'id des paramètres de route, le 2ème argument est le nouvel objet ou sa nouvelle version (on utilise le spread operator).
+//PUT : LOGIQUE MéTIER POUR MODIFIER UNE SAUCE : La fonction "updateSauce" pour une requête de type PUT permettant de modifier, mettre à jour un article identifié par son ID dans la BDD. Nous devons d'abord savoir si le user a modifié le fichier image ou pas (car si oui on aura un objet form-data, si non on aura un objet json). On cherche donc à savoir s'il y a un fichier dans la requête. Si oui, on va supprimer l'ancien fichier image du dossier "image" puis on va utiliser la méthode updateOne() dans notre modèle/classe "Sauce"  (qui sera de type "form-data") pour modifier la sauce unique ayant le même _id que le paramètre de la requête ; Si non, on utilise la méthode updateOne sur un objet de type "JSON" sans obligation de supprimer l'anienne inmage. La méthode updateOne() renvoie une promesse. Elle prend 2 arguments : le 1er est l'objet de comparaison donc on récupère l'id des paramètres de route, le 2ème argument est le nouvel objet ou sa nouvelle version (on utilise le spread operator).
 exports.modifySauce = (req, res, next) => {
-  const sauceObject = req.file ? //ici on utilise l'opérateur ternaire pour savoir si req.file existe (donc s'il y a un fichier dans la requête). S'il existe on aura un type d'objet (form-data) et si non un autre type d'objet (json). On résout l'équation de la sorte "{form-data} : {json}", ce qui veut dire si oui 1er objet, si non, 2ème objet. 
-    {
-      ...JSON.parse(req.body.sauce),
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-    } : { ...req.body };
+  Sauce.findOne({ _id: req.params.id }) //on va chercher la sauce de la BDD dont l'ID correspond à celle de la requête.
+    .then(sauce => {
+      //s'il y a un fichier image dans la requête, ça veut dire qu'on va remplacer l'image existante, donc il faut supprimer cette dernière sinon elle va rester dans le fichier image. 
+      if(req.file){
+        const filename = sauce.imageUrl.split('/images/')[1];// on récupère l'url du fichier de l'objet qu'on splite après la partie /images/ pour récupérer le nom du fichier. Le split retourne un tableau de 2 éléments, on garde le 2ème élément qui a l'index 1 et qui est le nom du fichier.
+        //ensuite on utilise la méthode unlink de fs (pour supprimer un fichier attaché à un objet). elle prend en 1er argument la chaine de caractères correspondant au chemin du fichier, en 2ème argument une fonction de callback. Cette fonction va manipuler l'objet Form-data pour copier ses éléments et attribuer une URL dynamique à la nouvelle image. Puis on va sauvegarder la sauce modifiée. 
+        fs.unlink(`images/${filename}`, () => {
+          const sauceObject = {...JSON.parse(req.body.sauce), imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`};
+          Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+          .then(() => res.status(200).json({ message: 'Sauce modifiée !'})) //si j'ajoute le code de statut Ca ne fonctionne pas !
+          .catch(error => res.status(400).json({ error }))
+          
+        })
+      }
+      //S'il n'y a pas de fichier dans la requête, c'est que l'image n'a pas été modifiée donc on se contente de sauvegarder la sauce modifiée. 
+      else{
+        const sauceObject = {...req.body };
+        Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+          .then(() => res.status(200).json({ message: 'Sauce modifiée !'})) //si j'ajoute le code de statut Ca ne fonctionne pas !
+          .catch(error => res.status(400).json({ error }))
+      }
+  })
+}
 
-  Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
-        .then(() => res.json({ message: 'Sauce modifiée !'})) //si j'ajoute le code de statut Ca ne fonctionne pas !
-        .catch(error => res.status(400).json({ error }))
-};
+      //ici on aurait pu utiliser un opérateur ternaire pour savoir si req.file existe (donc s'il y a un fichier dans la requête). S'il existe on aura un type d'objet (form-data) et si non un autre type d'objet (json). On résout l'équation de la sorte "{form-data} : {json}", ce qui veut dire si oui 1er objet, si non, 2ème objet.
+         /* const sauceObject = req.file ? {
+          ...JSON.parse(req.body.sauce),
+          imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+          } : { ...req.body };
 
-//POST : LOGIQUE MéTIER POUR MODIFIER les likes d'une SAUCE
+        Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+          .then(() => res.status(200).json({ message: 'Sauce modifiée !'})) //si j'ajoute le code de statut Ca ne fonctionne pas !
+          .catch(error => res.status(400).json({ error })) 
+      })
+  })*/
+
+
+//POST : LOGIQUE MéTIER POUR AJOUTER OU MODIFIER les likes d'une SAUCE
 exports.manageLike = (req, res, next) => {
   const userVote = req.body.userId; //on récupère l'ID de l'utilisateur qui a voté.
   //si le user n'est pas déjà dans le tableau des likers et que like == 1, on incrémente de +1 la valeur de la clé "likes" de la sauce identifiée par l'ID dans l'URL, et on ajoute l'utilisateur au tableau des usersLiked.
   Sauce.findOne({_id : req.params.id})
     .then(sauce => {
       if(req.body.like == 1){
-        
           Sauce.updateOne(
             { _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
             { $push: {usersLiked : req.body.userId}, $inc : {likes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
@@ -68,7 +93,7 @@ exports.manageLike = (req, res, next) => {
       if(req.body.like == -1){
         Sauce.updateOne(
           { _id: req.params.id }, // la méthode params de requête va chercher l'iD de l'URL
-          { $push: {usersDisliked : req.body.userId}, $inc : {dislikes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
+          { $push: {usersDisliked : userVote}, $inc : {dislikes: +1} } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "push" pour ajouter un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
         )
           .then( ()=> res.status(201).json({ message: 'Dislike pris en compte'}))
           .catch(error => res.status(400).json({ error }));
@@ -80,15 +105,15 @@ exports.manageLike = (req, res, next) => {
           Sauce.updateOne({_id : req.params.id}, {
             $pull : { usersLiked : userVote}, $inc : {likes : -1 } //en 2ème paramètre de UpdateOne, j'ai une instruction qui utilise les opérateurs de Mongoose. "pull" pour retirer un élément d'un tableau, "inc" pour incrémenter la valeur d'une clé. 
           })
-            .then(() => res.status(201).json({message : "Like annulé !"}))
-            .catch(error => res.status(500).json({error}))
+            .then(() => res.status(200).json({message : "Like annulé !"}))
+            .catch(error => res.status(400).json({error}))
       }
         if (sauce.usersDisliked.includes(userVote)){
           Sauce.updateOne({_id : req.params.id}, {
             $pull : { usersDisliked : userVote}, $inc : {dislikes : -1 }
           })
-            .then(() => res.status(201).json({message : "Dislike annulé!"}))
-            .catch(error => res.status(500).json({ error }))
+            .then(() => res.status(200).json({message : "Dislike annulé!"}))
+            .catch(error => res.status(400).json({ error }))
         }
       }
         
@@ -101,7 +126,7 @@ exports.deleteSauce = (req, res, next) => {
   Sauce.findOne({ _id: req.params.id }) //on va chercher le fichier de la BDD dont l'ID correspond à celle de la requête.
     .then(sauce => {
       const filename = sauce.imageUrl.split('/images/')[1];// on récupère l'url du fichier de l'objet qu'on splite après la partie /images/ pour récupérer le nom du fichier. Le split retourne un tableau de 2 éléments, on garde le 2ème élément qui a l'index 1 et qui est le nom du fichier.
-      //ensuite on utilise la méthode unlink de fs (pour supprimer un fichier attaché à un objet). elle prend en 1er argument la chaine de caractères correspondant au chemin du fichier, en 2ème argument une fonction de callback qui sera ici la suppression de l'objet Thing de la BDD. 
+      //ensuite on utilise la méthode unlink de fs (pour supprimer un fichier attaché à un objet). elle prend en 1er argument la chaine de caractères correspondant au chemin du fichier, en 2ème argument une fonction de callback qui sera ici la suppression de l'objet Sauce de la BDD. 
       fs.unlink(`images/${filename}`, () => {
         Sauce.deleteOne({ _id: req.params.id })
           .then(() => res.status(200).json({ message: 'Objet supprimé !'}))

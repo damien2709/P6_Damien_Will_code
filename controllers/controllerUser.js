@@ -37,7 +37,7 @@ exports.login = (req, res, next) => {
                         if(!valid){
                             return res.status(401).json({ error: 'Mot de passe incorrect !' });
                         }
-                        res.json({
+                        res.status(200).json({
                             userId: user._id,
                             token : jwtoken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'})
                         });// si je colle la réponse de statut de la réponse avec, ça ne marche pas!

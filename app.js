@@ -1,7 +1,7 @@
 //IMPORTS
   //Modules
   const express = require('express'); //on importe module Express
- require('dotenv').config(); ////on importe le fichier config du module dotenv (pas besoin de constante on n'en a pas l'utilité) pour la confidentialité des informations sensibles
+  require('dotenv').config(); ////on importe le fichier config du module dotenv (pas besoin de constante on n'en a pas l'utilité) pour la confidentialité des informations sensibles
   const mongoose = require('mongoose'); //on importe module mongoose
   const path = require('path'); //on importe le module Path pour pouvoir accèder au système de fichiers du serveur
 
