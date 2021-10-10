@@ -6,6 +6,14 @@ const bcrypt = require('bcrypt'); //on importe le module de hashage Bcrypt pour 
 
 const jwtoken = require('jsonwebtoken');
 
+const MaskData = require("maskdata");
+/** Default Options
+    maskWith: "*", 
+    unmaskedStartCharactersBeforeAt: 3,
+    unmaskedEndCharactersAfterAt: 2,
+    maskAtTheRate: false
+**/
+
 require('dotenv').config(); ////on importe le fichier config du module dotenv (pas besoin de constante on n'en a pas l'utilité) pour la confidentialité des informations sensibles (clé du token)
 
 //on va créer et exporter la fonction "signup" pour l'enregistrement de nouveaux utilisateurs. On va en 1er, hascher le mot de passe (fonction asynchrone qui prend du temps), puis ensuite avec le hasch créé, on va remplacer le mot de passe créé par l'utilisateur et on va enregistrer le user dans la BDD:
@@ -13,7 +21,7 @@ exports.signup = (req, res, next) => {
     bcrypt.hash(req.body.password, 10) //fonction pour hascher le mot de passe, avec en 1er argument le mot de passe du corps de la requête qui sera passé par le frontend, puis en 2ème argument le nb de fois qu'on exécute l'algorithme de haschage. La fonction est asynchrone et renvoie une promesse. 
         .then(hash => {
             const user = new User ({
-                email: req.body.email,
+                email: MaskData.maskEmail2(req.body.email), //on masque l'email avec Maskdata
                 password: hash
             }); 
         //on créé un nouvel utilisateur avec le modèle Mongoose, on remplace le password par le hash créé. 
@@ -26,7 +34,7 @@ exports.signup = (req, res, next) => {
 
 //on va créer et exporter la fonction "login" pour connecter des utilisateurs existants. On va utiliser la méthode findOne() de notre modèle/classe Mongoose "User" (QUI EST UN FICHIER "USER" DANS LA BDD !) pour trouver un seul utilisateur de la BDD. Pour trouver l'utilisateur avec son email unique, on recherche dans le fichier ""User" de la BDD le user qui a le même email que celui fourni dans la requête. La méthode renvoie une promesse. 
 exports.login = (req, res, next) => {
-    User.findOne({email: req.body.email})
+    User.findOne({email: MaskData.maskEmail2(req.body.email)}) //on masque l'email utilisateur
         // on doit vérifier si on a un résultat (trouvé un user existant dans la BDD)
         .then(user => {
             if(!user){
