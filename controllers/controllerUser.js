@@ -6,6 +6,8 @@ const bcrypt = require('bcrypt'); //on importe le module de hashage Bcrypt pour 
 
 const jwtoken = require('jsonwebtoken');
 
+require('dotenv').config(); ////on importe le fichier config du module dotenv (pas besoin de constante on n'en a pas l'utilité) pour la confidentialité des informations sensibles (clé du token)
+
 //on va créer et exporter la fonction "signup" pour l'enregistrement de nouveaux utilisateurs. On va en 1er, hascher le mot de passe (fonction asynchrone qui prend du temps), puis ensuite avec le hasch créé, on va remplacer le mot de passe créé par l'utilisateur et on va enregistrer le user dans la BDD:
 exports.signup = (req, res, next) => {
     bcrypt.hash(req.body.password, 10) //fonction pour hascher le mot de passe, avec en 1er argument le mot de passe du corps de la requête qui sera passé par le frontend, puis en 2ème argument le nb de fois qu'on exécute l'algorithme de haschage. La fonction est asynchrone et renvoie une promesse. 
@@ -39,7 +41,7 @@ exports.login = (req, res, next) => {
                         }
                         res.status(200).json({
                             userId: user._id,
-                            token : jwtoken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'})
+                            token : jwtoken.sign({userId: user._id}, process.env.KEYTOKEN, {expiresIn: '24h'})
                         });// si je colle la réponse de statut de la réponse avec, ça ne marche pas!
                     })
                     .catch(error => res.status(500).json({ error})); //si erreur serveur

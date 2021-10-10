@@ -43,7 +43,7 @@ exports.modifySauce = (req, res, next) => {
       if(req.file){
         const filename = sauce.imageUrl.split('/images/')[1];// on récupère l'url du fichier de l'objet qu'on splite après la partie /images/ pour récupérer le nom du fichier. Le split retourne un tableau de 2 éléments, on garde le 2ème élément qui a l'index 1 et qui est le nom du fichier.
         //ensuite on utilise la méthode unlink de fs (pour supprimer un fichier attaché à un objet). elle prend en 1er argument la chaine de caractères correspondant au chemin du fichier, en 2ème argument une fonction de callback. Cette fonction va manipuler l'objet Form-data pour copier ses éléments et attribuer une URL dynamique à la nouvelle image. Puis on va sauvegarder la sauce modifiée. 
-        fs.unlink(`images/${filename}`, () => {
+        fs.unlink(`../images/${filename}`, () => {
           const sauceObject = {...JSON.parse(req.body.sauce), imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`};
           Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
           .then(() => res.status(200).json({ message: 'Sauce modifiée !'})) //si j'ajoute le code de statut Ca ne fonctionne pas !
@@ -127,7 +127,7 @@ exports.deleteSauce = (req, res, next) => {
     .then(sauce => {
       const filename = sauce.imageUrl.split('/images/')[1];// on récupère l'url du fichier de l'objet qu'on splite après la partie /images/ pour récupérer le nom du fichier. Le split retourne un tableau de 2 éléments, on garde le 2ème élément qui a l'index 1 et qui est le nom du fichier.
       //ensuite on utilise la méthode unlink de fs (pour supprimer un fichier attaché à un objet). elle prend en 1er argument la chaine de caractères correspondant au chemin du fichier, en 2ème argument une fonction de callback qui sera ici la suppression de l'objet Sauce de la BDD. 
-      fs.unlink(`images/${filename}`, () => {
+      fs.unlink(`../images/${filename}`, () => {
         Sauce.deleteOne({ _id: req.params.id })
           .then(() => res.status(200).json({ message: 'Objet supprimé !'}))
           .catch(error => res.status(400).json({ error }));

@@ -4,12 +4,13 @@
   require('dotenv').config(); ////on importe le fichier config du module dotenv (pas besoin de constante on n'en a pas l'utilité) pour la confidentialité des informations sensibles
   const mongoose = require('mongoose'); //on importe module mongoose
   const path = require('path'); //on importe le module Path pour pouvoir accèder au système de fichiers du serveur
-
+  const helmet = require("helmet"); //on appelle le middleware Helmet
+  const rateLimit = require("express-rate-limit"); // On appelle le middleware rate-limit
     //Fichiers
   const routesSauces = require('./routes/routesSauces'); //on importe le router qui gère les routes pour les articles
   const routesUser = require('./routes/routesUser'); //on importe le router qui gère les routes pour les utilisateurs
 
-  // CONNEXION BDD
+  // CONNEXION BDD, données sensibles cachées grace à dotenv
   mongoose.connect(`mongodb+srv://${process.env.CONNECTBDDNAME}:${process.env.CONNECTBDDPW}@cluster0.qhmuf.mongodb.net/${process.env.CONNECTBDDPROJECT}?retryWrites=true&w=majority`,
     { useNewUrlParser: true,
       useUnifiedTopology: true })
@@ -18,6 +19,20 @@
   
   //CREATION APP EXPRESS
   const app = express(); //on créé une application Express en appelant la méthode « express »
+  
+  // Paramétrage de la limite de requêtes vers le serveur avec rate-limit
+  const limiter = rateLimit({
+    max: 100, //max 100 requêtes
+    windowMs: 15 * 60 * 1000, // 15 mn (15x60 000ms)
+    message: "Trop de requêtes depuis cette IP"
+});
+
+//on fait passer toutes les requêtes par ce middleware pour les limiter le cas échéant. 
+app.use(limiter);
+
+  //Hausse du niveau de sécurité de l'application Express grace au package Helmet, grace à un paramétrage spécifique des entêtes. 
+
+app.use(helmet());
   
   //HEADERS
   // le 1er middleware va instaurer des headers pour passer la sécurité CORS et permettre aux applis extérieures et navigateurs de communiquer et échanger avec l'appli API
