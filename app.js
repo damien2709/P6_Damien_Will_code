@@ -1,61 +1,53 @@
 //IMPORTS
-  //Modules
-  const express = require('express'); //on importe module Express
-  require('dotenv').config(); ////on importe le fichier config du module dotenv (pas besoin de constante on n'en a pas l'utilité) pour la confidentialité des informations sensibles
-  const mongoose = require('mongoose'); //on importe module mongoose
-  const path = require('path'); //on importe le module Path pour pouvoir accèder au système de fichiers du serveur
-  const helmet = require("helmet"); //on appelle le middleware Helmet
-  const rateLimit = require("express-rate-limit"); // On appelle le middleware rate-limit
-    //Fichiers
-  const routesSauces = require('./routes/routesSauces'); //on importe le router qui gère les routes pour les articles
-  const routesUser = require('./routes/routesUser'); //on importe le router qui gère les routes pour les utilisateurs
+const express = require('express'); 
+require('dotenv').config(); 
+const mongoose = require('mongoose'); 
+const path = require('path'); 
+const helmet = require("helmet"); 
+const rateLimit = require("express-rate-limit"); 
+  
+const routesSauces = require('./routes/routesSauces'); 
+const routesUser = require('./routes/routesUser'); 
 
-  // CONNEXION BDD, données sensibles cachées grace à dotenv
-  mongoose.connect(`mongodb+srv://${process.env.CONNECTBDDNAME}:${process.env.CONNECTBDDPW}@cluster0.qhmuf.mongodb.net/${process.env.CONNECTBDDPROJECT}?retryWrites=true&w=majority`,
+// CONNEXION BDD
+mongoose.connect(`mongodb+srv://${process.env.CONNECTBDDNAME}:${process.env.CONNECTBDDPW}@cluster0.qhmuf.mongodb.net/${process.env.CONNECTBDDPROJECT}?retryWrites=true&w=majority`,
     { useNewUrlParser: true,
       useUnifiedTopology: true })
     .then(() => console.log('Connexion à MongoDB réussie !'))
     .catch(() => console.log('Connexion à MongoDB échouée !'));
   
-  //CREATION APP EXPRESS
-  const app = express(); //on créé une application Express en appelant la méthode « express »
+//CREATION APP EXPRESS
+const app = express(); 
   
-  // Paramétrage de la limite de requêtes vers le serveur avec rate-limit
-  const limiter = rateLimit({
+// Paramétrage de la limite de requêtes vers le serveur 
+const limiter = rateLimit({
     max: 100, //max 100 requêtes
     windowMs: 15 * 60 * 1000, // 15 mn (15x60 000ms)
     message: "Trop de requêtes depuis cette IP"
 });
 
-//on fait passer toutes les requêtes par ce middleware pour les limiter le cas échéant. 
 app.use(limiter);
 
-  //Hausse du niveau de sécurité de l'application Express grace au package Helmet, grace à un paramétrage spécifique des entêtes. 
-
+  //paramétrage spécifique des entêtes. 
 app.use(helmet());
   
   //HEADERS
-  // le 1er middleware va instaurer des headers pour passer la sécurité CORS et permettre aux applis extérieures et navigateurs de communiquer et échanger avec l'appli API
-
-  app.use((req, res, next) => {
+app.use((req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
       next();
     });
   
-  //FONCTIONNALITES EXPRESS
-  //le 2ème middleware introduit la fonction json de express qu'on pourra appeler pour traduire tout objet json en javascript pour tout type de requête (remplace body-parser dans la nouvelle version express)
+//FONCTIONNALITE EXPRESS
   app.use(express.json())
   
-  //ROUTES 
-    //logique de routes : On enregistre avec app.use les routes attendus par le frontend. On remet le début de la route en 1er argument et en 2ème argument le nom de la constante représentant le routeur concerné.
-  app.use('/api/auth', routesUser) //ici on gère l'indicatif des routes pour les utilisateurs (envoyé par l'appli frontend) et le routeur concerné
+//ROUTES 
+app.use('/api/auth', routesUser) 
     
-  app.use('/api/sauces', routesSauces) //ici on gère l'indicatif des routes pour les articles (envoyé par l'appli frontend) et le routeur concerné.
+app.use('/api/sauces', routesSauces) 
   
-  //La route pour les fichiers est un peu différente. EN 2ème argument on indique la destination pour enregistrer les fichiers.
-  app.use('/images', express.static(path.join(__dirname, 'images'))) //ici gère les requêtes qui arriveront sur la route (/images) pour les fichiers image (envoyés par l'appli frontend). On utilise la méthode static() de express pour indiquer que la destination du fichier sera un dossier statique. La méthode prend en argument le chemin du dossier, qui doit être dynamique. On créé donc le chemin en utilisant la méthode join() de Path (qu'on a importé), cette méthode prend un argument qui est composé du nom du dossier des fichiers du serveur, puis notre dossier "images". 
+app.use('/images', express.static(path.join(__dirname, 'images'))) //ici gère les requêtes qui arriveront sur la route (/images) pour les fichiers image 
   
   //EXPORT
-  module.exports = app; // on exporte l’application (constante) pour que l’on puisse y accéder depuis les autres fichiers. 
+  module.exports = app;
